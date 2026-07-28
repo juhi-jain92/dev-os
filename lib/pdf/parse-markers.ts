@@ -10,7 +10,7 @@ export interface PageSection {
 const PAGE_MARKER = /\[PAGE (\d+)\]/g
 
 export function parsePageMarkers(text: string): PageSection[] {
-  const matches = [...text.matchAll(PAGE_MARKER)]
+  const matches = Array.from(text.matchAll(PAGE_MARKER))
 
   if (matches.length === 0) {
     return [{ page: 1, content: text.trim() }]

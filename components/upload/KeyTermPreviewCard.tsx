@@ -23,7 +23,7 @@ export function KeyTermPreviewCard({ contractType, customTerms, onAddCustomTerm 
 
   return (
     <div className="flex flex-col gap-3 rounded-lg bg-white p-6">
-      <h2 className="text-base font-medium text-grey-900">Terms we'll extract</h2>
+      <h2 className="text-base font-medium text-grey-900">Terms we&apos;ll extract</h2>
       <div className="flex flex-col gap-2">
         {standardTerms.map((term) => (
           <span key={term} className="text-sm text-grey-900">

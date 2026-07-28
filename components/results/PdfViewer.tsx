@@ -59,7 +59,7 @@ export function PdfViewer({ fileUrl, targetPage }: PdfViewerProps) {
   if (error) {
     return (
       <div className="rounded-lg bg-white p-6 text-sm text-grey-500">
-        This PDF couldn't be rendered.{' '}
+        This PDF couldn&apos;t be rendered.{' '}
         <a href={fileUrl} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline">
           Download PDF
         </a>
