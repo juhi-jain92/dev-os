@@ -1,0 +1,17 @@
+# Environment variables (real secrets — never commit)
+.env
+.env.local
+.env.*.local
+
+# Next.js
+.next/
+out/
+node_modules/
+tsconfig.tsbuildinfo
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Misc
+.DS_Store
+*.log

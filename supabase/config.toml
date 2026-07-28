@@ -1,0 +1,20 @@
+project_id = "contractiq"
+
+[api]
+enabled = true
+port = 54321
+
+[functions.upload-contract]
+verify_jwt = true
+
+[functions.process-extraction]
+verify_jwt = true
+
+[functions.chat]
+verify_jwt = true
+
+[functions.update-key-term]
+verify_jwt = true
+
+[functions.submit-feedback]
+verify_jwt = true

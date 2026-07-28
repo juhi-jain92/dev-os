@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Semantic tokens per docs/design.md — reference these custom properties
+   directly when Tailwind's generated utility classes aren't a clean fit. */
+:root {
+  --text-primary: #070a0e;   /* Grey 900 */
+  --text-secondary: #4a4c4f; /* Grey 500 */
+  --bg-primary: #ffffff;
+  --bg-surface: #fafafa;     /* Grey 25 */
+  --bg-subtle: #f0f0f1;      /* Grey 50 */
+  --brand: #115acb;          /* Blue 500 */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+}
+
+/* Hover/focus effects live here (not inline event handlers) so they can be
+   used from Server Components without triggering "Event handlers cannot be
+   passed to Client Component props." */
+.btn-primary {
+  padding: 12px 32px;
+  border-radius: 6px;
+  background: var(--brand);
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  text-decoration: none;
+  display: inline-block;
+  transition: transform 100ms ease-out;
+}
+.btn-primary:hover {
+  transform: scale(1.03);
+}
+
+.btn-ghost {
+  padding: 12px 32px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid #dadadb; /* Grey 100 */
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  text-decoration: none;
+  display: inline-block;
+  transition: border-color 100ms ease-out;
+}
+.btn-ghost:hover {
+  border-color: var(--brand);
+}
