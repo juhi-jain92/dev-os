@@ -42,21 +42,25 @@ ${contractText}`
 ${contractText}`
 }
 
-export function buildMessages(
+// Azure AI Foundry agent takes a single user input string per turn (no
+// system/instructions field — the agent has its own configured in the
+// portal), so all context is bundled into one message here.
+export function buildAzureChatInput(
   source: ContextSource,
   contractType: ContractType,
   contractText: string,
   history: ChatMessageLike[],
   newMessage: string
-) {
+): string {
   const depth = retrievalDepth(source)
   const recentHistory = history.slice(-depth)
 
-  return [
-    { role: 'system' as const, content: buildSystemPrompt(source, contractType, contractText) },
-    ...recentHistory.map((m) => ({ role: m.role, content: m.content })),
-    { role: 'user' as const, content: newMessage },
-  ]
+  const historyBlock =
+    recentHistory.length > 0
+      ? `\n\n--- CONVERSATION HISTORY ---\n${recentHistory.map((m) => `${m.role}: ${m.content}`).join('\n')}`
+      : ''
+
+  return `${buildSystemPrompt(source, contractType, contractText)}${historyBlock}\n\n--- USER QUESTION ---\n${newMessage}`
 }
 
 export function parsePageCitation(content: string): number | null {

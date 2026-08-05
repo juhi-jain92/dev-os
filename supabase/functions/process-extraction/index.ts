@@ -1,10 +1,10 @@
 // process-extraction Edge Function — the core AI component. Builds a
-// few-shot prompt, calls OpenAI in JSON mode, validates output, persists
-// key_terms / custom_key_terms. Source: docs/specs/key-term-extraction-spec.md
+// few-shot prompt, calls the Azure AI Foundry agent, validates output,
+// persists key_terms / custom_key_terms. Source: docs/specs/key-term-extraction-spec.md
 import { requireAuth, serviceRoleClient } from '../_shared/auth.ts'
 import { handleCorsPreflight, jsonResponse } from '../_shared/cors.ts'
 import { checkRateLimit, recordRateLimitEvent } from '../_shared/rate-limit.ts'
-import { callGlm } from '../_shared/glm-client.ts'
+import { callAzureAgent, extractAzureOutputText } from '../_shared/azure-client.ts'
 import { buildNdaExtractionPrompt } from '../../../lib/openai/prompts/extraction-nda.ts'
 import { buildMsaExtractionPrompt } from '../../../lib/openai/prompts/extraction-msa.ts'
 import { parseExtractionResponse, validateTerms } from '../../../lib/openai/prompts/parse-extraction.ts'
@@ -12,14 +12,8 @@ import { parseExtractionResponse, validateTerms } from '../../../lib/openai/prom
 const MAX_CUSTOM_TERMS = 5
 const MAX_EXTRACTIONS_PER_HOUR = 20
 
-function callGLM(messages: unknown[]): Promise<Response> {
-  return callGlm({
-    model: 'glm-4.7-flash',
-    temperature: 0.1,
-    maxTokens: 2000,
-    responseFormat: { type: 'json_object' },
-    messages,
-  })
+function callAzureExtraction(input: string): Promise<Response> {
+  return callAzureAgent({ input })
 }
 
 Deno.serve(async (req) => {
@@ -61,39 +55,28 @@ Deno.serve(async (req) => {
       ? buildNdaExtractionPrompt(customTerms)
       : buildMsaExtractionPrompt(customTerms)
 
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: contract.contract_text },
-  ]
+  const input = `${systemPrompt}\n\n--- CONTRACT TEXT ---\n${contract.contract_text}`
 
-  let response = await callGLM(messages)
+  let response = await callAzureExtraction(input)
   if (!response.ok) {
     await service.from('contracts').update({ status: 'error' }).eq('id', contract.id)
     return jsonResponse({ error: 'extraction_failed' }, 502)
   }
 
   let completion = await response.json()
-  let content: string = completion.choices?.[0]?.message?.content ?? ''
+  let content: string = extractAzureOutputText(completion)
   let terms = parseExtractionResponse(content)
 
   if (terms === null) {
-    // One retry: ask the model to correct its own output shape.
-    const retryMessages = [
-      ...messages,
-      { role: 'assistant', content },
-      {
-        role: 'user',
-        content:
-          'Your previous response was not valid JSON. Return only the JSON object { "terms": [...] }, no explanation.',
-      },
-    ]
-    response = await callGLM(retryMessages)
+    // One retry: ask the agent to correct its own output shape.
+    const retryInput = `${input}\n\n--- PREVIOUS RESPONSE (INVALID) ---\n${content}\n\n--- INSTRUCTION ---\nYour previous response was not valid JSON. Return only the JSON object { "terms": [...] }, no explanation.`
+    response = await callAzureExtraction(retryInput)
     if (!response.ok) {
       await service.from('contracts').update({ status: 'error' }).eq('id', contract.id)
       return jsonResponse({ error: 'extraction_failed' }, 502)
     }
     completion = await response.json()
-    content = completion.choices?.[0]?.message?.content ?? ''
+    content = extractAzureOutputText(completion)
     terms = parseExtractionResponse(content)
   }
 

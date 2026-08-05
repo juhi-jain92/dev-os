@@ -4,6 +4,8 @@ Things worth remembering next time, distilled from building ContractIQ. Not cour
 
 ---
 
+## Live system exists at: https://contractiq-legal.netlify.app/
+
 ## Working with LLM APIs
 
 - **Reasoning models silently eat your token budget.** Some models (e.g. GLM-4.7-Flash) emit hidden "reasoning" tokens before the real answer unless you explicitly disable it (`thinking: { type: "disabled" }` or equivalent). If a model call returns empty/truncated content with a tight `max_tokens`, check for this before assuming the prompt is wrong.

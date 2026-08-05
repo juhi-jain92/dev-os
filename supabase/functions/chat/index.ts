@@ -3,11 +3,11 @@
 // Source: docs/specs/chat-spec.md
 import { requireAuth, serviceRoleClient } from '../_shared/auth.ts'
 import { handleCorsPreflight, jsonResponse } from '../_shared/cors.ts'
-import { callGlm } from '../_shared/glm-client.ts'
+import { callAzureAgent, extractAzureOutputText } from '../_shared/azure-client.ts'
 import { checkRateLimit, recordRateLimitEvent } from '../_shared/rate-limit.ts'
 import { sanitizeForLLM } from '../_shared/prompt-injection-guard.ts'
 import { classifyQuery } from '../../../lib/openai/prompts/classify-query.ts'
-import { buildMessages, parsePageCitation } from '../../../lib/openai/prompts/chat.ts'
+import { buildAzureChatInput, parsePageCitation } from '../../../lib/openai/prompts/chat.ts'
 
 const MAX_HISTORY_FETCH = Number(Deno.env.get('MAX_CHAT_HISTORY') ?? '200')
 const MAX_CHAT_PER_HOUR = 30
@@ -74,19 +74,17 @@ Deno.serve(async (req) => {
   const history = (historyRows ?? []) as { role: 'user' | 'assistant'; content: string }[]
 
   const contextSource = classifyQuery(message)
-  const messages = buildMessages(contextSource, contract.contract_type, contract.contract_text, history, message)
+  const input = buildAzureChatInput(contextSource, contract.contract_type, contract.contract_text, history, message)
 
-  const glmResponse = await callGlm({
-    model: 'glm-4.7-flash',
-    temperature: 0.4,
-    maxTokens: 1000,
-    messages,
-  })
+  const azureResponse = await callAzureAgent({ input })
 
-  if (!glmResponse.ok) return jsonResponse({ error: 'chat_timeout' }, 504)
+  if (!azureResponse.ok) {
+    const errorBody = await azureResponse.text()
+    return jsonResponse({ error: 'chat_timeout', azure_error: errorBody }, 504)
+  }
 
-  const completion = await glmResponse.json()
-  const content: string = completion.choices?.[0]?.message?.content ?? ''
+  const completion = await azureResponse.json()
+  const content = extractAzureOutputText(completion)
   const pageCitation = contextSource === 'history' ? null : parsePageCitation(content)
 
   await recordRateLimitEvent(service, user.id, 'chat')
