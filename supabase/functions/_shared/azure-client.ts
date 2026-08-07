@@ -2,12 +2,12 @@
 // 3-attempt exponential backoff on transient errors, mirroring the previous
 // GLM client so a brief Azure blip doesn't surface as a user-facing failure.
 //
-// AZURE_AGENT_ENDPOINT must come from the Agents section of the AI Foundry
-// portal and end with /responses. If the endpoint doesn't already end with
-// /responses (e.g. a project inference URL was used instead), it is appended
-// here — but that is not the documented agent endpoint shape and may fail;
-// verify against the portal's Agents > your agent > Endpoint field if calls
-// return "Missing required parameter: model" or similar.
+// AZURE_AGENT_ENDPOINT must be the agent-scoped endpoint from the Agents
+// section of the AI Foundry portal (contains /agents/<agent-name>/endpoint/
+// protocols/openai/responses). The generic project-level /openai/v1/responses
+// URL also returns valid completions but does not create an agent run, so
+// nothing shows up in the Foundry portal's trace view — always use the
+// agent-scoped endpoint from the agent's own Endpoint field.
 const RETRY_DELAYS_MS = [1000, 2000, 4000]
 // Foundry /openai/v1 endpoints only accept this preview version as of Aug 2026 —
 // see https://github.com/Azure-Samples/ai-model-start/issues/2. Non-preview or
